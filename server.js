@@ -1,73 +1,86 @@
 var http = require('http');
 var server = http.createServer(requestHandler); 
 server.listen(process.env.PORT, process.env.IP, startHandler);
-    
+
 function startHandler()
 {
   var addr = server.address();
   console.log("Server listening at", addr.address + ":" + addr.port);
 }
-    
+
 function requestHandler(req, res) 
 {
+  try
+  {
     var url = require('url');
     var url_parts = url.parse(req.url, true);
     var query = url_parts.query;
-    var grades = query['grades'];
-    var count = 0;
-    var text="";
-    var word1 = query['word1'];
-    var word2 = query['word2'];
-    var word = query['word']
-    
-    res.writeHead(200, {'Content-Type': 'text/html'});
-    
-    if (query['cmd'] == 'stats')
+    var charge = 0;
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    if (Math.sign(query['checks'])<0||isNaN(query['checks'])==true)
     {
-      console.log("Handling a request");
-      console.log(query);
-      var sum = 0;
-      var parse = parseInt(grades);
-      for (var i in query['grades'])
-      {
-        sum = sum + parseInt(query['grades'][i]);
-        var count = 1+count;
-      }
-      var avg=sum/count;
-      const max =  Math.max(...grades);
-      const min =  Math.min(...grades);
-    
-      res.write('<pre>'+" Ave: " +avg+ " Max: " +max+ " min: " +min+'</pre>');
-
-      res.end('');
+      throw Error(' Invalid command')
     }
-    else if (query['cmd'] == 'repeat')
+    if (Number.isInteger(+query['savingsBal'])==false)
     {
-      console.log("Handling a request");
-      console.log(query);
-      for (i = 0,  text = ""; i < word.length; i++) 
-      { 
-          text += word + "<br>";
-      }
-      res.write('<pre>'+text+'</pre>');
-      res.end('');
-    }        
-    else if (query['cmd'] == 'dotted')
+     throw Error("Invalid value for savingsBal");
+    }
+    if (Number.isInteger(+query['checkBal'])==false)
     {
-        console.log("Handling a request");
-        console.log(query);
-        var dotsize= 30-(word1.length + word2.length);
-        var dots = '';
-        for (var i = 0 ; i < dotsize; i++)
-          dots = dots+'.';
-        res.write('<pre>' +word1+ dots +word2+ '</pre>');
-        res.end('');
+     throw Error("Invalid value for checkBal");
+    }
+    if (query['savingsBal'] == undefined)
+    {
+      throw Error("A perameter is missing savingsBal must be specified");
+    }
+    if (query['checkBal'] == undefined)
+    {
+      throw Error("A perameter is missing checkBal must be specified");
+    }
+     if (query['checks'] == undefined)
+    {
+      throw Error("A perameter is missing checks must be specified");
+    }
+    if (query['cmd'] == undefined)
+      throw Error("A command must be specified");
+    var result = {};
+    if (query['cmd'] == 'CalcCharge')
+    {
+      result = serviceCharge(query);
     }
     else
     {
-      res.end('');
+      throw Error("Invalid command: " + query['cmd']);
     }
+ 
+    res.write(JSON.stringify(result));
+    res.end('');
+  }
+  catch (e)
+  {
+    var error = {'error' : e.message};
+    res.write(JSON.stringify(error));
+    res.end('');
+  }
 }
-  
+
+function serviceCharge(query)
+{
+  if (query['checkBal']>1000 || query['savingsBal']>1500)  
+  {
+    
+  var result = {'charge' : 0}; 
+  return result;
+  }
+  else
+  { 
+    var charge = (query['checks'])*0.15;
+    var result = {'charge' : charge}; 
+    return result;
+    
+  }
+
+
+}
     
 
